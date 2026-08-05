@@ -1,0 +1,141 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BookletApp from '../components/BookletApp';
+---
+
+<Layout
+  title="Print Booklet Online - Free In-Browser PDF Imposition"
+  description="Impose your PDFs into landscape double-sided printer spreads online. Instant client-side conversions with adjustable bleeding, gutters, and layout modes."
+  canonicalUrl="https://pdf-to-booklet.pages.dev/print-booklet-online"
+>
+  <section class="seo-hero">
+    <div class="container">
+      <h1 class="page-title">Print Booklet <span class="gradient-text">Online</span></h1>
+      <p class="page-subtitle">
+        Transform standard single-page A4, Letter, or custom PDFs into printable booklet spreads. Secure, client-isolated execution with no file uploads.
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive App React Island (Defaulted to booklet saddle-stitch mode) -->
+  <section class="app-section">
+    <BookletApp client:load defaultPreset="auto" defaultMode="booklet" />
+  </section>
+
+  <!-- Deep SEO Information Panel -->
+  <section class="details-section">
+    <div class="details-container">
+      <h2>Saddle-Stitch Booklet Imposition</h2>
+      <p>
+        Saddle stitching is one of the most common binding methods for booklets, catalogs, and magazines. In a standard saddle-stitched booklet, all sheets are nested together and folded as a single bundle.
+      </p>
+      
+      <div class="details-grid">
+        <div class="detail-card">
+          <h3>How Saddle-Stitch Works</h3>
+          <p>
+            For a booklet of $N$ pages (which must be a multiple of 4), the outermost sheet contains the front cover (Page 1) and the back cover (Page $N$) on Side A, and Page 2 and Page $N-1$ on Side B. Our algorithm automatically parses your PDF, pads it to a multiple of 4 with blanks, and maps the pages to the correct printable slots.
+          </p>
+        </div>
+
+        <div class="detail-card">
+          <h3>No File Uploads or Data Loss</h3>
+          <p>
+            Traditional online booklet makers require you to upload files to their servers. This presents confidentiality risks and slows you down. PrintBooklet runs 100% locally in your browser, meaning it works instantly and protects your data.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .seo-hero {
+    padding: 3rem 1.5rem 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    font-size: 2.75rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .page-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .app-section {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  .details-section {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 4rem 1.5rem;
+    width: 100%;
+  }
+
+  .details-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .details-container h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .details-container > p {
+    color: var(--text-secondary);
+    max-width: 800px;
+    margin: 0 auto 3rem auto;
+    font-size: 1.05rem;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    text-align: left;
+  }
+
+  .detail-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
+  }
+
+  .detail-card h3 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .detail-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 768px) {
+    .page-title {
+      font-size: 2.25rem;
+    }
+
+    .details-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+</style>

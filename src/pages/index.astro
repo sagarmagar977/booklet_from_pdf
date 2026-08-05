@@ -1,0 +1,213 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BookletApp from '../components/BookletApp';
+---
+
+<Layout
+  title="Free PDF to Booklet Converter & Imposition Tool - 100% Client-Side"
+  description="Convert standard vertical single-page PDFs into landscape 2-up spreads formatted as booklets or multi-page signatures. Fast, private, and runs entirely in your browser."
+  canonicalUrl="https://pdf-to-booklet.pages.dev/"
+>
+  <section class="hero-section">
+    <div class="container">
+      <h1 class="hero-title"><span class="gradient-text">PDF to Booklet</span> Converter</h1>
+      <p class="hero-subtitle">
+        Impose your single-page PDFs into landscape 2-up spreads for professional printing and folding.
+        All processing occurs locally in your browser—<strong>your files never leave your computer</strong>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive App React Island -->
+  <section class="app-section">
+    <BookletApp client:load defaultPreset="auto" defaultMode="signature" />
+  </section>
+
+  <!-- Informational SEO Section -->
+  <section class="info-section">
+    <div class="info-container">
+      <div class="info-card">
+        <h3>100% In-Browser Privacy</h3>
+        <p>
+          Unlike other web utilities that upload your documents to third-party servers, PrintBooklet parses and processes your files locally using Web Workers. Perfect for confidential documents, books, and booklets.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>Eliminate Inversion Bugs</h3>
+        <p>
+          Printer drivers often invert pages on the short-edge when printing booklets. Our side-by-side positioning embeds pages onto the landscape canvas with a strict $0^\circ$ rotation lock, preventing upside-down prints.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h3>High-Performance Web Workers</h3>
+        <p>
+          Powered by HTML5 Web Workers, our processing engine manipulates raw file bytes in a background thread, preventing UI freezing even when compiling documents with hundreds of pages.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-section">
+    <div class="guide-container">
+      <h2>How to Print Your Booklets & Signatures</h2>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Impose Your PDF</h4>
+          <p>Select your booklet mode and target paper size. Upload your single-page PDF and download the imposed landscape PDF spreads.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>Double-Sided Printing</h4>
+          <p>Print the output PDF using your printer's double-sided (duplex) option. <strong>Set the flipping edge to Long-Edge Binding</strong> (Landscape).</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>Fold and Staple</h4>
+          <p>Stack the printed sheets in order, fold them directly down the center fold line, and saddle-stitch (staple) along the crease.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero-section {
+    padding: 3rem 1.5rem 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .hero-subtitle {
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .app-section {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  /* Info Section */
+  .info-section {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 4rem 1.5rem;
+    width: 100%;
+  }
+
+  .info-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .info-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
+  }
+
+  .info-card h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .info-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Guide Section */
+  .guide-section {
+    padding: 4rem 1.5rem;
+    width: 100%;
+    max-width: 1200px;
+  }
+
+  .guide-container {
+    text-align: center;
+  }
+
+  .guide-container h2 {
+    font-size: 2.25rem;
+    margin-bottom: 3rem;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    text-align: left;
+  }
+
+  .step-card {
+    position: relative;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+  }
+
+  .step-num {
+    position: absolute;
+    top: -1.25rem;
+    left: 1.5rem;
+    background: var(--accent-blue);
+    color: white;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 1.2rem;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  }
+
+  .step-card h4 {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .hero-title {
+      font-size: 2.25rem;
+    }
+
+    .info-container,
+    .steps-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+</style>

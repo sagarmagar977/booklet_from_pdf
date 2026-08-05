@@ -1,0 +1,333 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  canonicalUrl: string;
+}
+
+const { title, description, canonicalUrl } = Astro.props;
+
+// JSON-LD Structured Data
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Client-Side Booklet Imposer & Converter",
+  "operatingSystem": "All",
+  "applicationCategory": "UtilityApplication",
+  "browserRequirements": "Requires JavaScript. Requires HTML5 Canvas & Web Workers.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0.00",
+    "priceCurrency": "USD"
+  },
+  "description": "Convert standard single-page PDFs into landscape 2-up booklets and multi-page signatures entirely in your browser with zero server uploads.",
+  "featureList": [
+    "100% Client-Side Privacy",
+    "4-Page Signature Imposition",
+    "Saddle-Stitch Booklet Formatting",
+    "Customizable Bleed & Center Gutter Margins",
+    "Standard Output Presets (A3, A4, A5, Letter, Legal)"
+  ]
+};
+
+const jsonLdHowTo = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to Impose a PDF into a Booklet or Signature",
+  "description": "Convert single-page PDFs into printer-ready booklet spreads client-side in seconds.",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Upload PDF",
+      "text": "Drag and drop your single-page PDF document into the browser drop-zone."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Configure Options",
+      "text": "Select your booklet layout (Saddle-Stitch or 4-Page Signature) and target paper size (A4, Letter, A3, etc.). Set outer bleed or center gutter margins if desired."
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Download Imposed PDF",
+      "text": "Click 'Generate & Download Booklet' to run the Web Worker compiler. Save the generated 2-up landscape PDF file instantly."
+    }
+  ]
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalUrl} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+
+    <!-- Security Header Boundaries (Content Security Policy) -->
+    <!-- connect-src 'none' blocks all network traffic, ensuring that the PDF files are never uploaded -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; frame-ancestors 'none';"
+    />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Programmatic SEO Structured Data -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLdHowTo)} />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-container">
+        <a href="/" class="logo">
+          <svg xmlns="http://www.w3.org/2000/svg" class="logo-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span class="logo-text">Print<span>Booklet</span></span>
+        </a>
+        <nav class="nav-links">
+          <a href="/print-booklet-online">Online Booklet</a>
+          <a href="/a4-to-a5-booklet">A4 to A5</a>
+          <a href="/letter-to-half-letter">Letter to Half-Letter</a>
+          <a href="/pdf-4-page-signature">4-Page Signature</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <slot />
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-container">
+        <p>&copy; {new Date().getFullYear()} PrintBooklet. 100% Client-Side PDF Imposition. No files are uploaded.</p>
+        <div class="footer-links">
+          <a href="/">Home</a>
+          <a href="/print-booklet-online">App Hub</a>
+          <a href="https://docs.astro.build" target="_blank" rel="noopener noreferrer">Astro Docs</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  /* Core Premium Dark Design System */
+  :root {
+    --bg-primary: #0b0f19;
+    --bg-secondary: #131b2e;
+    --bg-tertiary: #1e2942;
+    --accent-blue: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --accent-teal: #14b8a6;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --border-color: #2e3b5e;
+    --border-glow: rgba(59, 130, 246, 0.3);
+    
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    
+    --header-height: 70px;
+    --footer-height: 80px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Header Styles */
+  .app-header {
+    background-color: rgba(19, 27, 46, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+  }
+
+  .header-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+  }
+
+  .logo-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--accent-blue);
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+  }
+
+  .logo-text span {
+    color: var(--accent-blue);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.2s, text-shadow 0.2s;
+  }
+
+  .nav-links a:hover,
+  .nav-links a:focus {
+    color: var(--text-primary);
+    text-shadow: 0 0 12px var(--accent-blue);
+  }
+
+  /* Main Layout */
+  .main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Footer */
+  .app-footer {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    height: var(--footer-height);
+    display: flex;
+    align-items: center;
+    margin-top: auto;
+  }
+
+  .footer-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover {
+    color: var(--text-primary);
+  }
+
+  /* Shared UI Elements */
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Scrollbar Customization */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--bg-tertiary);
+  }
+
+  @media (max-width: 768px) {
+    .header-container {
+      padding: 0 1rem;
+    }
+    
+    .nav-links {
+      display: none; /* Mobile navigation toggle can be added, or hidden for simplicity */
+    }
+
+    .footer-container {
+      flex-direction: column;
+      gap: 0.75rem;
+      text-align: center;
+      padding: 1rem 0;
+    }
+  }
+</style>

@@ -1,0 +1,141 @@
+---
+import Layout from '../layouts/Layout.astro';
+import BookletApp from '../components/BookletApp';
+---
+
+<Layout
+  title="Letter to Half-Letter Booklet Converter - Private Online Tool"
+  description="Impose standard Half-Letter PDF pages onto standard US Letter landscape sheets to make a folded booklet. Client-side browser conversion with no file uploads."
+  canonicalUrl="https://pdf-to-booklet.pages.dev/letter-to-half-letter"
+>
+  <section class="seo-hero">
+    <div class="container">
+      <h1 class="page-title">Letter to <span class="gradient-text">Half-Letter Booklet</span></h1>
+      <p class="page-subtitle">
+        Scale and fit Half-Letter PDF pages side-by-side onto standard US Letter landscape paper. Private and instant client-side execution.
+      </p>
+    </div>
+  </section>
+
+  <!-- Interactive App React Island (Defaulted to Letter target paper size preset) -->
+  <section class="app-section">
+    <BookletApp client:load defaultPreset="letter" defaultMode="signature" />
+  </section>
+
+  <!-- Deep SEO Information Panel -->
+  <section class="details-section">
+    <div class="details-container">
+      <h2>US Sizing: Half-Letter Booklet Formatting</h2>
+      <p>
+        In the United States and Canada, standard Letter paper ($8.5 \times 11$ inches) is folded in half to create a Half-Letter booklet ($5.5 \times 8.5$ inches). This size is extremely popular for church bulletins, program booklets, and menus.
+      </p>
+      
+      <div class="details-grid">
+        <div class="detail-card">
+          <h3>Strict Vector Page Inversion Safeguard</h3>
+          <p>
+            When printing double-sided landscape pages, many printer drivers struggle with short-edge flipping, resulting in every other page being printed upside down. Our engine places pages side-by-side inside the landscape sheet with a fixed $0^\circ$ rotation matrix, bypassing printer driver inversion bugs.
+          </p>
+        </div>
+
+        <div class="detail-card">
+          <h3>Custom Margins & Bleeds</h3>
+          <p>
+            To achieve a premium, professional edge-to-edge layout, you can set the outer bleed margin. This adds a custom padding surrounding the margins, ensuring your content is never clipped by normal printer mechanical feed rollers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .seo-hero {
+    padding: 3rem 1.5rem 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    font-size: 2.75rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .page-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .app-section {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+
+  .details-section {
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 4rem 1.5rem;
+    width: 100%;
+  }
+
+  .details-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .details-container h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .details-container > p {
+    color: var(--text-secondary);
+    max-width: 800px;
+    margin: 0 auto 3rem auto;
+    font-size: 1.05rem;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    text-align: left;
+  }
+
+  .detail-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
+  }
+
+  .detail-card h3 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+  }
+
+  .detail-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 768px) {
+    .page-title {
+      font-size: 2.25rem;
+    }
+
+    .details-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+</style>
