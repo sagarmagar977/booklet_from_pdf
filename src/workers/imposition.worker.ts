@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFName } from 'pdf-lib';
 
 // Target paper dimensions in points (1 pt = 1/72 inch)
 const PAPER_PRESETS: Record<string, { width: number; height: number }> = {
@@ -20,15 +20,33 @@ self.onmessage = async (e: MessageEvent) => {
       scalingOption,
       outerBleed,
       centerGutter,
+      removeBlankPages,
     } = e.data;
 
     // 1. Load source PDF document
     const sourceDoc = await PDFDocument.load(pdfBytes);
-    const sourcePages = sourceDoc.getPages();
+    let sourcePages = sourceDoc.getPages();
+
+    if (removeBlankPages) {
+      // Filter out pages that have no Contents stream
+      sourcePages = sourcePages.filter(page => page.node.get(PDFName.of('Contents')));
+    } else {
+      // Initialize empty Contents stream on blank pages to prevent MissingPageContentsEmbeddingError
+      for (const page of sourcePages) {
+        if (!page.node.get(PDFName.of('Contents'))) {
+          page.drawRectangle({ x: 0, y: 0, width: 0, height: 0 });
+        }
+      }
+    }
+
     const totalPages = sourcePages.length;
 
     if (totalPages === 0) {
-      throw new Error('The uploaded PDF has no pages.');
+      throw new Error(
+        removeBlankPages
+          ? 'The uploaded PDF has only blank pages, which were all filtered out.'
+          : 'The uploaded PDF has no pages.'
+      );
     }
 
     // 2. Pad page count to a multiple of 4

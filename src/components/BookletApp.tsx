@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, PDFName } from 'pdf-lib';
 import './BookletApp.css';
 
 interface BookletAppProps {
@@ -32,6 +32,11 @@ export default function BookletApp({
   const [outerBleedUnit, setOuterBleedUnit] = useState<'mm' | 'pt'>('mm');
   const [centerGutterVal, setCenterGutterVal] = useState<string>('0');
   const [centerGutterUnit, setCenterGutterUnit] = useState<'mm' | 'pt'>('mm');
+  const [removeBlankPages, setRemoveBlankPages] = useState<boolean>(false);
+  const [nonBlankIndices, setNonBlankIndices] = useState<number[]>([]);
+  const [pdfDocInstance, setPdfDocInstance] = useState<any>(null);
+  const [pdfjsLibInstance, setPdfjsLibInstance] = useState<any>(null);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Preview Navigation State
   const [currentSheetIdx, setCurrentSheetIdx] = useState<number>(0);
@@ -45,14 +50,69 @@ export default function BookletApp({
   const workerRef = useRef<Worker | null>(null);
   const dropzoneRef = useRef<HTMLDivElement>(null);
 
-  // Cleanup worker on unmount
+  // Load pdfjs-dist dynamically on client-side to prevent SSR / static build ReferenceError (e.g. DOMMatrix)
   useEffect(() => {
+    async function initPdfjs() {
+      try {
+        const pdfjs = await import('pdfjs-dist');
+        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+        setPdfjsLibInstance(pdfjs);
+      } catch (err) {
+        console.error('Failed to initialize pdfjs-dist:', err);
+      }
+    }
+    initPdfjs();
+
     return () => {
       if (workerRef.current) {
         workerRef.current.terminate();
       }
     };
   }, []);
+
+  // Load PDFJS document preview whenever file or pdfjsLibInstance changes
+  useEffect(() => {
+    if (!file || !pdfjsLibInstance) {
+      setPdfDocInstance(null);
+      return;
+    }
+
+    let active = true;
+    async function loadPdfjsDoc() {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        if (!active) return;
+        const loadingTask = pdfjsLibInstance.getDocument({ data: new Uint8Array(arrayBuffer) });
+        const pdfjsDoc = await loadingTask.promise;
+        if (active) {
+          setPdfDocInstance(pdfjsDoc);
+        }
+      } catch (err) {
+        console.error('Error loading PDF with PDF.js:', err);
+      }
+    }
+    loadPdfjsDoc();
+
+    return () => {
+      active = false;
+    };
+  }, [file, pdfjsLibInstance]);
+
+  // Listen for escape key in fullscreen mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    };
+    if (isFullscreen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   // Conversions to points
   const convertToPoints = (value: number, unit: string): number => {
@@ -94,10 +154,19 @@ export default function BookletApp({
 
       // Load document to get pages metadata
       const pdfDoc = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
-      const pageCount = pdfDoc.getPageCount();
-      const firstPage = pdfDoc.getPages()[0];
+      const pages = pdfDoc.getPages();
+      const pageCount = pages.length;
+      const firstPage = pages[0];
       const originalWidth = firstPage.getWidth();
       const originalHeight = firstPage.getHeight();
+
+      const nonBlank: number[] = [];
+      pages.forEach((page, idx) => {
+        if (page.node.get(PDFName.of('Contents'))) {
+          nonBlank.push(idx);
+        }
+      });
+      setNonBlankIndices(nonBlank);
 
       setFileData({
         pageCount,
@@ -212,6 +281,7 @@ export default function BookletApp({
         scalingOption,
         outerBleed: finalOuterBleed,
         centerGutter: finalCenterGutter,
+        removeBlankPages,
       });
     } catch (err: any) {
       setIsProcessing(false);
@@ -221,49 +291,49 @@ export default function BookletApp({
 
   // Math mapping calculations for preview spreads
   const getPreviewPages = () => {
-    if (!fileData) return { left: 'Blank', right: 'Blank' };
+    if (!fileData) return { leftIdx: -1, rightIdx: -1 };
 
-    const total = fileData.pageCount;
+    const total = removeBlankPages ? nonBlankIndices.length : fileData.pageCount;
     const remainder = total % 4;
     const padded = remainder === 0 ? total : total + (4 - remainder);
 
     const k = currentSheetIdx;
-    let leftIdx = -1;
-    let rightIdx = -1;
+    let leftVirtualIdx = -1;
+    let rightVirtualIdx = -1;
 
     if (impositionMode === 'signature') {
       if (previewSide === 'A') {
-        leftIdx = 4 * k + 3;
-        rightIdx = 4 * k + 0;
+        leftVirtualIdx = 4 * k + 3;
+        rightVirtualIdx = 4 * k + 0;
       } else {
-        leftIdx = 4 * k + 1;
-        rightIdx = 4 * k + 2;
+        leftVirtualIdx = 4 * k + 1;
+        rightVirtualIdx = 4 * k + 2;
       }
     } else {
       // Saddle Stitch Booklet
       if (previewSide === 'A') {
-        leftIdx = padded - 2 * k - 1;
-        rightIdx = 2 * k;
+        leftVirtualIdx = padded - 2 * k - 1;
+        rightVirtualIdx = 2 * k;
       } else {
-        leftIdx = 2 * k + 1;
-        rightIdx = padded - 2 * k - 2;
+        leftVirtualIdx = 2 * k + 1;
+        rightVirtualIdx = padded - 2 * k - 2;
       }
     }
 
-    const formatPageStr = (idx: number) => {
-      if (idx < 0 || idx >= total) return 'Blank';
-      return `Page ${idx + 1}`;
+    const mapVirtualToOriginalIndex = (vIdx: number) => {
+      if (vIdx < 0 || vIdx >= total) return -1;
+      return removeBlankPages ? nonBlankIndices[vIdx] : vIdx;
     };
 
     return {
-      left: formatPageStr(leftIdx),
-      right: formatPageStr(rightIdx),
+      leftIdx: mapVirtualToOriginalIndex(leftVirtualIdx),
+      rightIdx: mapVirtualToOriginalIndex(rightVirtualIdx),
     };
   };
 
   const getPaddedPageCount = () => {
     if (!fileData) return 0;
-    const total = fileData.pageCount;
+    const total = removeBlankPages ? nonBlankIndices.length : fileData.pageCount;
     const remainder = total % 4;
     return remainder === 0 ? total : total + (4 - remainder);
   };
@@ -328,6 +398,8 @@ export default function BookletApp({
                   e.stopPropagation();
                   setFile(null);
                   setFileData(null);
+                  setNonBlankIndices([]);
+                  setPdfDocInstance(null);
                   setProgress(0);
                   setStatusMessage(null);
                 }}
@@ -341,7 +413,7 @@ export default function BookletApp({
         </div>
 
         {/* Live Visual Spread Preview */}
-        <div className="glass-panel" style={{ flexGrow: 1 }}>
+        <div className={`glass-panel ${isFullscreen ? 'fullscreen-preview-mode' : ''}`} style={{ flexGrow: 1 }}>
           <div className="preview-header">
             <h2 className="panel-title" style={{ margin: 0, border: 'none', padding: 0 }}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -352,25 +424,55 @@ export default function BookletApp({
             </h2>
             
             {fileData && (
-              <div className="preview-nav">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className="preview-nav">
+                  <button
+                    className="btn-nav"
+                    onClick={() => setCurrentSheetIdx(Math.max(0, currentSheetIdx - 1))}
+                    disabled={currentSheetIdx === 0}
+                    title="Previous Sheet"
+                  >
+                    &larr;
+                  </button>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0 0.5rem' }}>
+                    Sheet {currentSheetIdx + 1} of {totalSheets}
+                  </span>
+                  <button
+                    className="btn-nav"
+                    onClick={() => setCurrentSheetIdx(Math.min(totalSheets - 1, currentSheetIdx + 1))}
+                    disabled={currentSheetIdx === totalSheets - 1}
+                    title="Next Sheet"
+                  >
+                    &rarr;
+                  </button>
+                </div>
+
                 <button
-                  className="btn-nav"
-                  onClick={() => setCurrentSheetIdx(Math.max(0, currentSheetIdx - 1))}
-                  disabled={currentSheetIdx === 0}
-                  title="Previous Sheet"
+                  className="btn-action-icon"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen"}
+                  style={{
+                    background: 'rgba(30, 41, 66, 0.6)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '0.45rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                  }}
                 >
-                  &larr;
-                </button>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0 0.5rem' }}>
-                  Sheet {currentSheetIdx + 1} of {totalSheets}
-                </span>
-                <button
-                  className="btn-nav"
-                  onClick={() => setCurrentSheetIdx(Math.min(totalSheets - 1, currentSheetIdx + 1))}
-                  disabled={currentSheetIdx === totalSheets - 1}
-                  title="Next Sheet"
-                >
-                  &rarr;
+                  {isFullscreen ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" style={{ width: '1.25rem', height: '1.25rem' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" style={{ width: '1.25rem', height: '1.25rem' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4M4 20l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                    </svg>
+                  )}
                 </button>
               </div>
             )}
@@ -398,21 +500,19 @@ export default function BookletApp({
                 {/* Simulated Sheet Paper */}
                 <div className="sheet-spread">
                   <div className="sheet-page-slot">
-                    <div className="page-num">{previewPages.left}</div>
-                    <div className="page-label">Left Slot</div>
+                    <PdfPageCanvas pdfDoc={pdfDocInstance} pageIndex={previewPages.leftIdx} label="Left Slot" isFullscreen={isFullscreen} />
                   </div>
                   <div className="center-fold-line"></div>
                   {centerGutterVal !== '0' && <div className="gutter-overlay"></div>}
                   {outerBleedVal !== '0' && <div className="bleed-overlay"></div>}
                   <div className="sheet-page-slot">
-                    <div className="page-num">{previewPages.right}</div>
-                    <div className="page-label">Right Slot</div>
+                    <PdfPageCanvas pdfDoc={pdfDocInstance} pageIndex={previewPages.rightIdx} label="Right Slot" isFullscreen={isFullscreen} />
                   </div>
                 </div>
 
                 <div className="sheet-details">
                   <div className="sheet-subtitle">
-                    Imposition mapping for folded stack: <strong>{previewPages.left}</strong> is on the left, <strong>{previewPages.right}</strong> is on the right
+                    Imposition mapping for folded stack: <strong>{previewPages.leftIdx === -1 ? 'Blank' : `Page ${previewPages.leftIdx + 1}`}</strong> is on the left, <strong>{previewPages.rightIdx === -1 ? 'Blank' : `Page ${previewPages.rightIdx + 1}`}</strong> is on the right
                   </div>
                 </div>
               </div>
@@ -593,6 +693,20 @@ export default function BookletApp({
           </div>
         </div>
 
+        {/* Remove Blank Pages Toggle */}
+        <div className="settings-group checkbox-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              className="checkbox-input"
+              checked={removeBlankPages}
+              onChange={(e) => setRemoveBlankPages(e.target.checked)}
+              disabled={isProcessing}
+            />
+            <span>Remove Blank / Empty Pages</span>
+          </label>
+        </div>
+
         {/* Generate / Action Trigger */}
         <button
           className="btn-generate"
@@ -653,6 +767,91 @@ export default function BookletApp({
           100% { transform: rotate(360deg); }
         }
       `}</style>
+    </div>
+  );
+}
+
+interface PdfPageCanvasProps {
+  pdfDoc: any;
+  pageIndex: number;
+  label: string;
+  isFullscreen?: boolean;
+}
+
+function PdfPageCanvas({ pdfDoc, pageIndex, label, isFullscreen }: PdfPageCanvasProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    if (!pdfDoc || pageIndex === -1) {
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        }
+      }
+      return;
+    }
+
+    let active = true;
+    let renderTask: any = null;
+
+    async function drawPage() {
+      try {
+        const page = await pdfDoc.getPage(pageIndex + 1);
+        if (!active || !canvasRef.current) return;
+
+        const parent = canvasRef.current.parentElement;
+        const width = parent ? parent.clientWidth : 200;
+        const height = parent ? parent.clientHeight : 250;
+
+        const viewport = page.getViewport({ scale: 1.0 });
+        const scale = Math.min(width / viewport.width, height / viewport.height);
+        const scaledViewport = page.getViewport({ scale: scale * 0.95 });
+
+        canvasRef.current.width = scaledViewport.width;
+        canvasRef.current.height = scaledViewport.height;
+
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, scaledViewport.width, scaledViewport.height);
+
+        renderTask = page.render({
+          canvasContext: ctx,
+          viewport: scaledViewport,
+        });
+
+        await renderTask.promise;
+      } catch (err) {
+        console.error('Error rendering preview page:', err);
+      }
+    }
+
+    drawPage();
+
+    return () => {
+      active = false;
+      if (renderTask) {
+        renderTask.cancel();
+      }
+    };
+  }, [pdfDoc, pageIndex, isFullscreen]);
+
+  if (pageIndex === -1) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#94a3b8' }}>Blank Page</span>
+        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginTop: '0.25rem' }}>{label}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}>
+      <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', borderRadius: '4px' }} />
+      <span style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
+        {label} (Page {pageIndex + 1})
+      </span>
     </div>
   );
 }

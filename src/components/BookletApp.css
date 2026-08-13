@@ -480,3 +480,101 @@
   border: 1px solid rgba(20, 184, 166, 0.2);
   color: #99f6e4;
 }
+
+/* Custom Checkbox Styling */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: all 0.2s ease;
+}
+
+.checkbox-input:checked {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+.checkbox-input:checked::before {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  background-color: white;
+}
+
+.checkbox-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.25);
+}
+
+/* Fullscreen Spread Preview Mode */
+.glass-panel.fullscreen-preview-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: rgba(11, 15, 25, 0.96);
+  backdrop-filter: blur(24px);
+  border: none;
+  border-radius: 0;
+  padding: 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+  animation: previewFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes previewFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1.0); }
+}
+
+.fullscreen-preview-mode .preview-grid {
+  flex-grow: 1;
+  min-height: 0;
+  height: calc(100vh - 160px);
+  padding: 2rem;
+  background: rgba(5, 7, 12, 0.25);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.fullscreen-preview-mode .sheet-spread {
+  max-width: 900px;
+  height: 100%;
+  max-height: calc(100vh - 280px);
+}
+
+.fullscreen-preview-mode .btn-action-icon:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #ef4444 !important;
+}
+
+
