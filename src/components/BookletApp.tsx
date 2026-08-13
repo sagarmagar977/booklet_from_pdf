@@ -795,18 +795,14 @@ function PdfPageCanvas({ pdfDoc, pageIndex, label, isFullscreen }: PdfPageCanvas
     let active = true;
     let renderTask: any = null;
 
-    async function drawPage() {
+    async function drawPage(width: number, height: number) {
       try {
         const page = await pdfDoc.getPage(pageIndex + 1);
         if (!active || !canvasRef.current) return;
 
-        const parent = canvasRef.current.parentElement;
-        const width = parent ? parent.clientWidth : 200;
-        const height = parent ? parent.clientHeight : 250;
-
         const viewport = page.getViewport({ scale: 1.0 });
         const scale = Math.min(width / viewport.width, height / viewport.height);
-        const scaledViewport = page.getViewport({ scale: scale * 0.95 });
+        const scaledViewport = page.getViewport({ scale: scale * 0.99 });
 
         canvasRef.current.width = scaledViewport.width;
         canvasRef.current.height = scaledViewport.height;
@@ -822,20 +818,38 @@ function PdfPageCanvas({ pdfDoc, pageIndex, label, isFullscreen }: PdfPageCanvas
         });
 
         await renderTask.promise;
-      } catch (err) {
-        console.error('Error rendering preview page:', err);
+      } catch (err: any) {
+        if (err?.name !== 'HeadingError' && err?.name !== 'RenderingCancelledException') {
+          console.error('Error rendering preview page:', err);
+        }
       }
     }
 
-    drawPage();
+    const parent = canvasRef.current?.parentElement;
+    if (!parent) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          if (renderTask) {
+            renderTask.cancel();
+          }
+          drawPage(width, height);
+        }
+      }
+    });
+
+    resizeObserver.observe(parent);
 
     return () => {
       active = false;
+      resizeObserver.disconnect();
       if (renderTask) {
         renderTask.cancel();
       }
     };
-  }, [pdfDoc, pageIndex, isFullscreen]);
+  }, [pdfDoc, pageIndex]);
 
   if (pageIndex === -1) {
     return (
@@ -847,11 +861,29 @@ function PdfPageCanvas({ pdfDoc, pageIndex, label, isFullscreen }: PdfPageCanvas
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', justifyContent: 'center' }}>
-      <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', borderRadius: '4px' }} />
-      <span style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <canvas ref={canvasRef} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' }} />
+      
+      {/* Absolute badge overlay */}
+      <div style={{
+        position: 'absolute',
+        bottom: '8px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        background: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(4px)',
+        color: '#f8fafc',
+        padding: '2px 8px',
+        borderRadius: '12px',
+        fontSize: '0.65rem',
+        fontWeight: 600,
+        pointerEvents: 'none',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        whiteSpace: 'nowrap',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+      }}>
         {label} (Page {pageIndex + 1})
-      </span>
+      </div>
     </div>
   );
 }
